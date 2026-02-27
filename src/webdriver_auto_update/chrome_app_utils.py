@@ -57,7 +57,7 @@ class ChromeAppUtils:
             for path in paths:
                 file_name = os.path.basename(path)
                 # Looks for the period delimiated version number in groups of 4 e.g. 121.0.6167.140
-                pattern = '\d+\.\d+\.\d+\.\d+'
+                pattern = r'\d+\.\d+\.\d+\.\d+'
                 match = re.search(pattern, file_name)
                 if match and match.group():
                     # Chrome version matched.
