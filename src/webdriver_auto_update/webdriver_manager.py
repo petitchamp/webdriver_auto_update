@@ -8,6 +8,7 @@ import sys
 import wget
 import zipfile
 from pathlib import Path
+from chrome_app_utils import ChromeAppUtils
 
 # Constants
 CHROMEDRIVER_BASE_URL = "https://storage.googleapis.com/chrome-for-testing-public"
@@ -20,11 +21,13 @@ class WebDriverManager:
 
     Args:
         driver_directory (str): The directory to store ChromeDriver and its resources.
-
+        sync_with_installed_chrome (bool): if True, download version of locally installed chrome
+                                           if False, download latest online stable version
     Attributes:
         driver_directory (str): The directory to store ChromeDriver and its resources.
         current_os_platform (str): The identifier for the current operating system.
         online_driver_version (str): The latest online version of ChromeDriver.
+        installed_chrome_version (str): Locally installed Chrome browser version.
         base_directory (str): The absolute directory path of the current script.
 
     Methods:
@@ -52,11 +55,14 @@ class WebDriverManager:
     CHROMEDRIVER = 'chromedriver'  # For Unix-based systems
     CHROMEDRIVER_WIN = 'chromedriver.exe'  # For Windows
 
-    def __init__(self, driver_directory: str, quarantine_extended_attribute=None):
+    def __init__(self, driver_directory: str, quarantine_extended_attribute=None, sync_with_installed_chrome=False):
         self.driver_directory = str(os.path.abspath(driver_directory))
         self.current_os_platform = self.obtain_os()
         self.online_driver_version = self.get_latest_chromedriver_release()
         self.base_directory = os.path.dirname(os.path.abspath(__file__))
+        chrome_app_utils = ChromeAppUtils()
+        self.installed_chrome_version = chrome_app_utils.get_chrome_version()
+        self.sync_with_installed_chrome = sync_with_installed_chrome
         # Determine the quarantine attribute
         if quarantine_extended_attribute is not None:
             self.quarantine_attribute = (
@@ -145,16 +151,16 @@ class WebDriverManager:
         Returns:
             None
         """
-        download_url = f"{CHROMEDRIVER_BASE_URL}/{self.online_driver_version}/{self.current_os_platform}/chromedriver-{self.current_os_platform}.zip"
-        print(f"Latest stable driver: {download_url}")
+        target_version = self.installed_chrome_version if self.sync_with_installed_chrome else self.online_driver_version
+        download_url = f"{CHROMEDRIVER_BASE_URL}/{target_version}/{self.current_os_platform}/chromedriver-{self.current_os_platform}.zip"
+        print(f"Downloading chromedriver: {download_url}")
         latest_driver_zip = wget.download(
             download_url, out=self.driver_directory)
         with zipfile.ZipFile(latest_driver_zip, 'r') as downloaded_zip:
             downloaded_zip.extractall(path=self.driver_directory)
         os.remove(latest_driver_zip)
         self._transfer_chromedriver_file()
-        print(
-            f"\nSuccessfully downloaded chromedriver version {self.online_driver_version} to:\n{self.driver_directory}")
+        print(f"\nSuccessfully downloaded chromedriver version {target_version} to:\n{self.driver_directory}")
 
     def _transfer_chromedriver_file(self):
         """
@@ -191,9 +197,11 @@ class WebDriverManager:
             self.download_latest_version()
         else:
             print(f"Local chromedriver version: {local_driver_version}")
-            print(
-                f"Latest online chromedriver version: {self.online_driver_version}")
-            if local_driver_version != self.online_driver_version:
+            print(f"Local installed chrome version: {self.installed_chrome_version}")
+            print(f"Latest online chromedriver version: {self.online_driver_version}")
+
+            if (not self.sync_with_installed_chrome and local_driver_version != self.online_driver_version) \
+                or ( self.sync_with_installed_chrome and local_driver_version != self.installed_chrome_version):
                 self.update_driver()
 
     def get_local_driver_version(self):

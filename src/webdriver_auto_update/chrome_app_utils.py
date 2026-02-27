@@ -27,7 +27,11 @@ class ChromeAppUtils:
         elif platform.startswith("linux"):
             self.install_path = "/usr/bin/google-chrome"
         elif platform.startswith("win"):
-            self.install_path = fr"C:\Program Files\Google\Chrome\Application"
+            self.install_path = [
+                fr"C:\Program Files\Google\Chrome\Application",
+                fr"C:\Program Files (x86)\Google\Chrome\Application"
+            ]
+
         else:
             raise NotImplemented(f"Unidentified OS: '{platform}'")
 
@@ -50,15 +54,20 @@ class ChromeAppUtils:
         Returns:
             str: Version number of Chrome application.
         """
+
         if path is None:
             path = self.install_path
-        if os.path.isdir(path):
-            paths = [f.path for f in os.scandir(path) if f.is_dir()]
-            for path in paths:
-                file_name = os.path.basename(path)
-                # Looks for the period delimiated version number in groups of 4 e.g. 121.0.6167.140
-                pattern = r'\d+\.\d+\.\d+\.\d+'
-                match = re.search(pattern, file_name)
-                if match and match.group():
-                    # Chrome version matched.
-                    return match.group(0)
+        if type(path) is str:
+            path = [path]
+        for p in path:
+            if os.path.isdir(p):
+                paths = [f.path for f in os.scandir(p) if f.is_dir()]
+                for file_path in paths:
+                    file_name = os.path.basename(file_path)
+                    # Looks for the period delimiated version number in groups of 4 e.g. 121.0.6167.140
+                    pattern = r'\d+\.\d+\.\d+\.\d+'
+                    match = re.search(pattern, file_name)
+                    if match and match.group():
+                        # Chrome version matched.
+                        return match.group(0)
+        return ''
