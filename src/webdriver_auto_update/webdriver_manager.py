@@ -8,7 +8,7 @@ import sys
 import wget
 import zipfile
 from pathlib import Path
-from chrome_app_utils import ChromeAppUtils
+from .chrome_app_utils import ChromeAppUtils
 
 # Constants
 CHROMEDRIVER_BASE_URL = "https://storage.googleapis.com/chrome-for-testing-public"
